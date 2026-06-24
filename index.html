@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>さやの貯金アプリ</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="さやの貯金" />
+  <meta name="theme-color" content="#f5a3b6" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <h1>さやの貯金アプリ</h1>
+  </header>
+
+  <main>
+    <!-- ===== ステージ表示 ===== -->
+    <section class="card stage-card">
+      <div class="stage-image" id="stage-image"><!-- JSで描画 --></div>
+      <h2 class="stage-title" id="stage-title">—</h2>
+      <p class="stage-message" id="stage-message"></p>
+    </section>
+
+    <!-- ===== 進捗 ===== -->
+    <section class="card progress-card">
+      <div class="amount-row">
+        <span class="amount-current" id="amount-current">¥0</span>
+        <span class="amount-sep">/</span>
+        <span class="amount-goal" id="amount-goal">¥0</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+      <p class="progress-meta">
+        <span id="progress-percent">0%</span>
+        <span id="progress-remain"></span>
+      </p>
+    </section>
+
+    <!-- ===== 入力 ===== -->
+    <section class="card input-card">
+      <label class="field">
+        <span class="field-label">現在の貯金額</span>
+        <div class="field-input">
+          <span class="yen">¥</span>
+          <input type="number" id="input-current" inputmode="numeric" min="0" step="1" placeholder="0" />
+        </div>
+      </label>
+
+      <label class="field">
+        <span class="field-label">目標金額</span>
+        <div class="field-input">
+          <span class="yen">¥</span>
+          <input type="number" id="input-goal" inputmode="numeric" min="0" step="1" placeholder="100000" />
+        </div>
+      </label>
+
+      <button class="save-btn" id="save-btn">保存する</button>
+      <p class="saved-note" id="saved-note"></p>
+    </section>
+
+    <!-- ===== ステージ一覧 ===== -->
+    <section class="card stages-list-card">
+      <h3 class="stages-list-title">ステージ一覧</h3>
+      <ul class="stages-list" id="stages-list"><!-- JSで描画 --></ul>
+    </section>
+  </main>
+
+  <footer class="app-footer">こつこつ貯めよう ✨</footer>
+
+  <script src="stages.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
