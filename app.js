@@ -1,8 +1,9 @@
 /* =========================================================
    さやの貯金アプリ
-   - 入金履歴の合計を「現在の貯金額」として自動計算
+   - 記録(入金/引き出し)の履歴から現在の貯金額を自動計算
+     現在の貯金額 = 入金合計 − 引き出し合計
    - 進捗率に応じて stages.js の成長ステージを切り替え
-   - 入金履歴 / 目標金額 / タイトルを localStorage に保存
+   - 記録 / 目標金額 / タイトルを localStorage に保存
    ========================================================= */
 (function () {
   "use strict";
@@ -10,6 +11,12 @@
   const STORAGE_KEY = "saya-tyokin-v2";
   const DEFAULT_TITLE = "さやの貯金アプリ";
   const DEFAULT_GOAL = 100000;
+
+  // メモの候補（モードごと）
+  const MEMO_SUGGESTIONS = {
+    deposit: ["おこづかい", "お給料", "ボーナス", "おつり貯金", "臨時収入"],
+    withdrawal: ["病院代", "急な出費", "家の用事", "交通費", "生活費補填"],
+  };
 
   /* ---------------- DOM ---------------- */
   const el = {
@@ -24,14 +31,20 @@
     progressPercent: document.getElementById("progress-percent"),
     progressRemain: document.getElementById("progress-remain"),
     // 記録
+    modeSegment: document.getElementById("mode-segment"),
+    amountLabel: document.getElementById("amount-label"),
     inputAmount: document.getElementById("input-amount"),
+    inputDate: document.getElementById("input-date"),
     inputMemo: document.getElementById("input-memo"),
+    memoSuggestions: document.getElementById("memo-suggestions"),
     quickButtons: document.getElementById("quick-buttons"),
     addBtn: document.getElementById("add-btn"),
     savedNote: document.getElementById("saved-note"),
     historyList: document.getElementById("history-list"),
-    historyTotal: document.getElementById("history-total"),
     historyEmpty: document.getElementById("history-empty"),
+    sumDeposit: document.getElementById("sum-deposit"),
+    sumWithdrawal: document.getElementById("sum-withdrawal"),
+    sumBalance: document.getElementById("sum-balance"),
     // 設定
     inputTitle: document.getElementById("input-title"),
     inputGoal: document.getElementById("input-goal"),
@@ -49,10 +62,31 @@
 
   /* ---------------- 状態 ---------------- */
   let state = loadState();
+  let mode = "deposit"; // "deposit" | "withdrawal"
 
   /* ---------------- 保存 / 読み込み ---------------- */
   function defaultState() {
-    return { deposits: [], goal: DEFAULT_GOAL, title: DEFAULT_TITLE };
+    return { records: [], goal: DEFAULT_GOAL, title: DEFAULT_TITLE };
+  }
+
+  // 旧データ(deposits[] / typeなし)を records[] に移行して取りこぼさない
+  function migrateRecords(parsed) {
+    let raw = [];
+    if (Array.isArray(parsed.records)) {
+      raw = parsed.records;
+    } else if (Array.isArray(parsed.deposits)) {
+      raw = parsed.deposits; // 旧バージョン
+    }
+    return raw.map(function (r) {
+      return {
+        id: r.id || (Date.now() + "-" + Math.random().toString(36).slice(2, 7)),
+        // typeが無い古い履歴は入金として扱う
+        type: r.type === "withdrawal" ? "withdrawal" : "deposit",
+        amount: toPositiveInt(r.amount),
+        memo: typeof r.memo === "string" ? r.memo : "",
+        date: r.date || new Date().toISOString(),
+      };
+    });
   }
 
   function loadState() {
@@ -61,7 +95,7 @@
       if (!raw) return defaultState();
       const parsed = JSON.parse(raw);
       return {
-        deposits: Array.isArray(parsed.deposits) ? parsed.deposits : [],
+        records: migrateRecords(parsed),
         goal: toPositiveInt(parsed.goal) || DEFAULT_GOAL,
         title: typeof parsed.title === "string" && parsed.title.trim()
           ? parsed.title.trim()
@@ -86,17 +120,28 @@
     return "¥" + Number(n).toLocaleString("ja-JP");
   }
 
-  // 入金履歴の合計 = 現在の貯金額
-  function getTotal() {
-    return state.deposits.reduce(function (sum, d) {
-      return sum + (Number(d.amount) || 0);
+  function getDepositTotal() {
+    return state.records.reduce(function (sum, r) {
+      return r.type === "deposit" ? sum + r.amount : sum;
     }, 0);
   }
 
-  // 進捗率（%）。目標0以下なら0。
+  function getWithdrawalTotal() {
+    return state.records.reduce(function (sum, r) {
+      return r.type === "withdrawal" ? sum + r.amount : sum;
+    }, 0);
+  }
+
+  // 現在の貯金額 = 入金合計 − 引き出し合計
+  function getBalance() {
+    return getDepositTotal() - getWithdrawalTotal();
+  }
+
+  // 進捗率（%）。残高が0未満なら0%扱い。
   function getPercent() {
     if (state.goal <= 0) return 0;
-    return (getTotal() / state.goal) * 100;
+    const balance = Math.max(0, getBalance());
+    return (balance / state.goal) * 100;
   }
 
   // 進捗率からステージを取得（threshold以下で最大のもの）
@@ -109,11 +154,18 @@
     return stage;
   }
 
-  // 日付フォーマット（YYYY/M/D）
   function formatDate(iso) {
     const d = new Date(iso);
     if (isNaN(d.getTime())) return "";
     return d.getFullYear() + "/" + (d.getMonth() + 1) + "/" + d.getDate();
+  }
+
+  // input[type=date] 用の YYYY-MM-DD（ローカル日付）
+  function todayInputValue() {
+    const d = new Date();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return d.getFullYear() + "-" + m + "-" + day;
   }
 
   /* ---------------- 画像描画（絵文字 or 画像パス） ---------------- */
@@ -134,9 +186,9 @@
     }
   }
 
-  /* ---------------- 描画 ---------------- */
+  /* ---------------- 描画：ホーム ---------------- */
   function renderHome() {
-    const total = getTotal();
+    const balance = getBalance();
     const percent = getPercent();
     const stage = getStage(percent);
 
@@ -144,48 +196,59 @@
     el.stageTitle.textContent = stage.title;
     el.stageMessage.textContent = stage.message;
 
-    el.amountCurrent.textContent = yen(total);
+    el.amountCurrent.textContent = yen(balance);
     el.amountGoal.textContent = yen(state.goal);
 
+    // バーは最大100%で止める
     const clamped = Math.max(0, Math.min(100, percent));
     el.progressFill.style.width = clamped.toFixed(1) + "%";
     el.progressPercent.textContent = Math.floor(percent) + "%";
 
-    if (state.goal > 0 && total >= state.goal) {
+    if (state.goal > 0 && balance >= state.goal) {
       el.progressRemain.textContent = "目標達成！🎉";
     } else if (state.goal > 0) {
-      el.progressRemain.textContent = "あと " + yen(state.goal - total);
+      el.progressRemain.textContent = "あと " + yen(state.goal - balance);
     } else {
       el.progressRemain.textContent = "";
     }
   }
 
+  /* ---------------- 描画：集計 ---------------- */
+  function renderSummary() {
+    el.sumDeposit.textContent = yen(getDepositTotal());
+    el.sumWithdrawal.textContent = yen(getWithdrawalTotal());
+    el.sumBalance.textContent = yen(getBalance());
+  }
+
+  /* ---------------- 描画：履歴 ---------------- */
   function renderHistory() {
-    el.historyTotal.textContent = "合計 " + yen(getTotal());
     el.historyList.innerHTML = "";
 
-    if (state.deposits.length === 0) {
+    if (state.records.length === 0) {
       el.historyEmpty.style.display = "block";
       return;
     }
     el.historyEmpty.style.display = "none";
 
     // 新しいものを上に
-    const items = state.deposits.slice().reverse();
-    items.forEach(function (dep) {
+    const items = state.records.slice().reverse();
+    items.forEach(function (rec) {
+      const isW = rec.type === "withdrawal";
       const li = document.createElement("li");
-      li.className = "history-item";
+      li.className = "history-item " + (isW ? "is-withdrawal" : "is-deposit");
 
       const main = document.createElement("div");
       main.className = "history-main";
 
       const amt = document.createElement("span");
       amt.className = "history-amount";
-      amt.textContent = "+" + yen(dep.amount);
+      amt.textContent = (isW ? "−" : "＋") + yen(rec.amount);
 
       const meta = document.createElement("span");
       meta.className = "history-meta";
-      meta.textContent = formatDate(dep.date) + (dep.memo ? " ・ " + dep.memo : "");
+      const label = isW ? "引き出し" : "入金";
+      meta.textContent = formatDate(rec.date) + " ・ " + label +
+        (rec.memo ? " ・ " + rec.memo : "");
 
       main.appendChild(amt);
       main.appendChild(meta);
@@ -196,7 +259,7 @@
       del.setAttribute("aria-label", "削除");
       del.textContent = "✕";
       del.addEventListener("click", function () {
-        deleteDeposit(dep.id);
+        deleteRecord(rec.id);
       });
 
       li.appendChild(main);
@@ -205,6 +268,7 @@
     });
   }
 
+  /* ---------------- 描画：設定 / タイトル ---------------- */
   function renderSettings() {
     el.inputTitle.value = state.title;
     el.inputGoal.value = state.goal ? String(state.goal) : "";
@@ -218,40 +282,85 @@
   function renderAll() {
     renderTitle();
     renderHome();
+    renderSummary();
     renderHistory();
     renderSettings();
   }
 
-  /* ---------------- 入金の追加 / 削除 ---------------- */
-  function addDeposit() {
+  /* ---------------- モード切り替え（入金/引き出し） ---------------- */
+  function setMode(newMode) {
+    mode = newMode === "withdrawal" ? "withdrawal" : "deposit";
+    const isW = mode === "withdrawal";
+
+    el.modeSegment.querySelectorAll(".segment-btn").forEach(function (btn) {
+      btn.classList.toggle("active", btn.dataset.mode === mode);
+    });
+    el.modeSegment.classList.toggle("withdrawal", isW);
+
+    el.amountLabel.textContent = isW ? "引き出し額" : "入金額";
+    el.addBtn.textContent = isW ? "引き出しを記録" : "追加する";
+    el.inputMemo.placeholder = isW ? "病院代・急な出費 など" : "おこづかい・ボーナス など";
+
+    // メモ候補を入れ替え
+    el.memoSuggestions.innerHTML = "";
+    MEMO_SUGGESTIONS[mode].forEach(function (text) {
+      const opt = document.createElement("option");
+      opt.value = text;
+      el.memoSuggestions.appendChild(opt);
+    });
+  }
+
+  /* ---------------- 記録の追加 / 削除 ---------------- */
+  function addRecord() {
     const amount = toPositiveInt(el.inputAmount.value);
     if (amount <= 0) {
       flash(el.savedNote, "金額を入力してね", true);
       el.inputAmount.focus();
       return;
     }
-    state.deposits.push({
+
+    const isW = mode === "withdrawal";
+
+    if (isW) {
+      // 残高を超える場合は先に警告
+      if (amount > getBalance()) {
+        if (!window.confirm("現在の貯金額を超えています。記録しますか？")) return;
+      }
+      // 引き出しの確認ダイアログ
+      if (!window.confirm("この金額を貯金から引き出しとして記録しますか？")) return;
+    }
+
+    // 日付：入力値（YYYY-MM-DD）優先、無ければ今日
+    const dateStr = el.inputDate.value || todayInputValue();
+    const dateIso = new Date(dateStr + "T00:00:00").toISOString();
+
+    state.records.push({
       id: Date.now() + "-" + Math.random().toString(36).slice(2, 7),
+      type: mode,
       amount: amount,
       memo: el.inputMemo.value.trim(),
-      date: new Date().toISOString(),
+      date: dateIso,
     });
     saveState();
 
     el.inputAmount.value = "";
     el.inputMemo.value = "";
+    el.inputDate.value = todayInputValue();
+
     renderHome();
+    renderSummary();
     renderHistory();
-    flash(el.savedNote, "追加しました ✓");
+    flash(el.savedNote, isW ? "引き出しを記録しました ✓" : "追加しました ✓");
   }
 
-  function deleteDeposit(id) {
+  function deleteRecord(id) {
     if (!window.confirm("この記録を削除しますか？")) return;
-    state.deposits = state.deposits.filter(function (d) {
-      return d.id !== id;
+    state.records = state.records.filter(function (r) {
+      return r.id !== id;
     });
     saveState();
     renderHome();
+    renderSummary();
     renderHistory();
   }
 
@@ -298,17 +407,22 @@
 
   /* ---------------- イベント登録 ---------------- */
   function bindEvents() {
-    el.addBtn.addEventListener("click", addDeposit);
+    el.addBtn.addEventListener("click", addRecord);
 
     el.inputAmount.addEventListener("keydown", function (e) {
-      if (e.key === "Enter") addDeposit();
+      if (e.key === "Enter") addRecord();
     });
 
-    // よく使う金額ボタン → 入力欄にセット
     el.quickButtons.querySelectorAll(".quick-btn").forEach(function (btn) {
       btn.addEventListener("click", function () {
         el.inputAmount.value = btn.dataset.amount;
         el.inputAmount.focus();
+      });
+    });
+
+    el.modeSegment.querySelectorAll(".segment-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        setMode(btn.dataset.mode);
       });
     });
 
@@ -324,5 +438,7 @@
 
   /* ---------------- 初期化 ---------------- */
   bindEvents();
+  setMode("deposit");
+  el.inputDate.value = todayInputValue();
   renderAll();
 })();

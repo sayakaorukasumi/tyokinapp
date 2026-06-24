@@ -238,19 +238,60 @@ main {
 .saved-note.show { opacity: 1; }
 .saved-note.error { color: var(--danger); }
 
-/* ===== 履歴 ===== */
-.history-head {
+/* ===== セグメント切替（入金 / 引き出し） ===== */
+.segment {
+  display: flex;
+  background: #f5e3eb;
+  border-radius: 14px;
+  padding: 4px;
+  margin-bottom: 18px;
+}
+.segment-btn {
+  flex: 1;
+  min-height: 44px;
+  border: none;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--text-sub);
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s, box-shadow 0.18s;
+}
+.segment-btn.active {
+  background: #fff;
+  color: var(--primary-dark);
+  box-shadow: 0 2px 6px rgba(224, 127, 153, 0.22);
+}
+/* 引き出しモードのときはアクティブ色をやさしいラベンダーに */
+.segment.withdrawal { background: #eae6f2; }
+.segment.withdrawal .segment-btn.active {
+  color: #7a6ca6;
+  box-shadow: 0 2px 6px rgba(122, 108, 166, 0.22);
+}
+
+/* ===== 集計カード ===== */
+.summary-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.summary-row {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  margin-bottom: 12px;
 }
-.history-head .card-title { margin: 0; }
-.history-total {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--primary-dark);
+.summary-row.total {
+  border-top: 1px dashed var(--border);
+  padding-top: 10px;
+  margin-top: 2px;
 }
+.summary-label { font-size: 14px; color: var(--text-sub); }
+.summary-value { font-size: 16px; font-weight: 700; color: var(--text); }
+.summary-value.deposit { color: var(--primary-dark); }
+.summary-value.withdrawal { color: #8579b3; }
+.summary-row.total .summary-value { font-size: 19px; color: var(--primary-dark); }
+
+/* ===== 履歴 ===== */
 .history-list {
   list-style: none;
   margin: 0;
@@ -264,9 +305,18 @@ main {
   align-items: center;
   gap: 10px;
   padding: 12px 14px;
-  background: #fdf6f9;
-  border: 1px solid var(--border);
   border-radius: 14px;
+  border: 1px solid var(--border);
+}
+/* 入金：ピンク系 */
+.history-item.is-deposit {
+  background: #fdf6f9;
+  border-color: var(--border);
+}
+/* 引き出し：やわらかいラベンダー（怖く見えない色） */
+.history-item.is-withdrawal {
+  background: #f4f1fa;
+  border-color: #e3ddf0;
 }
 .history-main {
   flex: 1;
@@ -277,8 +327,9 @@ main {
 .history-amount {
   font-size: 17px;
   font-weight: 700;
-  color: var(--good);
 }
+.is-deposit .history-amount { color: var(--primary-dark); }
+.is-withdrawal .history-amount { color: #8579b3; }
 .history-meta {
   font-size: 12px;
   color: var(--text-sub);

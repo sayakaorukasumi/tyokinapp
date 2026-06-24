@@ -45,9 +45,14 @@
     <!-- ===================== 記録 ===================== -->
     <section class="tab-page" id="page-record">
       <div class="card input-card">
-        <h2 class="card-title">入金を記録</h2>
+        <!-- 入金 / 引き出し 切り替え -->
+        <div class="segment" id="mode-segment">
+          <button type="button" class="segment-btn active" data-mode="deposit">入金</button>
+          <button type="button" class="segment-btn" data-mode="withdrawal">引き出し</button>
+        </div>
+
         <label class="field">
-          <span class="field-label">入金額</span>
+          <span class="field-label" id="amount-label">入金額</span>
           <div class="field-input">
             <span class="yen">¥</span>
             <input type="number" id="input-amount" inputmode="numeric" min="1" step="1" placeholder="0" />
@@ -62,23 +67,44 @@
         </div>
 
         <label class="field">
+          <span class="field-label">日付</span>
+          <div class="field-input">
+            <input type="date" id="input-date" />
+          </div>
+        </label>
+
+        <label class="field">
           <span class="field-label">メモ（任意）</span>
           <div class="field-input">
-            <input type="text" id="input-memo" maxlength="40" placeholder="おこづかい・ボーナス など" />
+            <input type="text" id="input-memo" maxlength="40" list="memo-suggestions" placeholder="おこづかい・ボーナス など" />
           </div>
+          <datalist id="memo-suggestions"></datalist>
         </label>
 
         <button class="primary-btn" id="add-btn">追加する</button>
         <p class="saved-note" id="saved-note"></p>
       </div>
 
-      <div class="card history-card">
-        <div class="history-head">
-          <h2 class="card-title">入金履歴</h2>
-          <span class="history-total" id="history-total">合計 ¥0</span>
+      <!-- 集計 -->
+      <div class="card summary-card">
+        <div class="summary-row">
+          <span class="summary-label">入金合計</span>
+          <span class="summary-value deposit" id="sum-deposit">¥0</span>
         </div>
+        <div class="summary-row">
+          <span class="summary-label">引き出し合計</span>
+          <span class="summary-value withdrawal" id="sum-withdrawal">¥0</span>
+        </div>
+        <div class="summary-row total">
+          <span class="summary-label">現在の貯金額</span>
+          <span class="summary-value" id="sum-balance">¥0</span>
+        </div>
+      </div>
+
+      <div class="card history-card">
+        <h2 class="card-title">記録の履歴</h2>
         <ul class="history-list" id="history-list"><!-- JSで描画 --></ul>
-        <p class="empty-note" id="history-empty">まだ入金記録がありません。</p>
+        <p class="empty-note" id="history-empty">まだ記録がありません。</p>
       </div>
     </section>
 
