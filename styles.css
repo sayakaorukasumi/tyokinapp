@@ -2,19 +2,21 @@
   --bg: #fdf6f9;
   --card: #ffffff;
   --primary: #f5a3b6;
-  --primary-dark: #e88aa1;
+  --primary-dark: #e07f99;
   --accent: #ffd9e3;
-  --text: #4a4044;
-  --text-sub: #9b8a91;
-  --border: #f3e2e9;
-  --good: #7cb87c;
-  --shadow: 0 6px 18px rgba(232, 138, 161, 0.15);
+  --text: #463c41;
+  --text-sub: #8a7882;
+  --border: #f1dde6;
+  --good: #5fa85f;
+  --danger: #e06b6b;
+  --shadow: 0 6px 18px rgba(224, 127, 153, 0.15);
+  --tabbar-h: 64px;
 }
 
 * { box-sizing: border-box; }
 
 /* iOSのフォーカス時の自動ズーム防止 */
-input { font-size: 16px; }
+input, button { font-size: 16px; }
 
 html, body { margin: 0; }
 
@@ -23,18 +25,17 @@ body {
     "Yu Gothic UI", "Meiryo", sans-serif;
   background:
     radial-gradient(circle at 20% 0%, #fff1f5 0%, transparent 55%),
-    radial-gradient(circle at 90% 10%, #fdeaf2 0%, transparent 45%),
+    radial-gradient(circle at 90% 8%, #fdeaf2 0%, transparent 45%),
     var(--bg);
   color: var(--text);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
-  padding-bottom: env(safe-area-inset-bottom);
 }
 
 /* ヘッダー */
 .app-header {
   text-align: center;
-  padding: 20px 16px 4px;
+  padding: calc(18px + env(safe-area-inset-top)) 16px 4px;
 }
 .app-header h1 {
   margin: 0;
@@ -45,39 +46,55 @@ body {
 }
 
 main {
-  max-width: 460px;
+  max-width: 480px;
   margin: 0 auto;
-  padding: 12px 16px 24px;
+  /* 下部タブバー + Safariの下部バーに隠れないよう余白を確保 */
+  padding: 12px 16px
+    calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 32px);
+}
+
+/* タブページ */
+.tab-page { display: none; }
+.tab-page.active {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 18px;
+  animation: fade 0.25s ease;
+}
+@keyframes fade {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* カード共通 */
 .card {
   background: var(--card);
-  border-radius: 20px;
-  padding: 18px;
+  border-radius: 22px;
+  padding: 20px;
   box-shadow: var(--shadow);
   border: 1px solid var(--border);
+}
+.card-title {
+  margin: 0 0 14px;
+  font-size: 16px;
+  color: var(--primary-dark);
 }
 
 /* ===== ステージカード ===== */
 .stage-card {
   text-align: center;
-  background:
-    linear-gradient(180deg, #fff 0%, #fff7fa 100%);
+  background: linear-gradient(180deg, #fff 0%, #fff7fa 100%);
 }
 .stage-image {
-  width: 132px;
-  height: 132px;
-  margin: 4px auto 10px;
+  width: 140px;
+  height: 140px;
+  margin: 4px auto 12px;
   border-radius: 50%;
-  background: radial-gradient(circle at 50% 40%, #fff 0%, var(--accent) 100%);
+  background: radial-gradient(circle at 50% 38%, #fff 0%, var(--accent) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: inset 0 0 0 4px #fff, 0 4px 12px rgba(232, 138, 161, 0.2);
+  box-shadow: inset 0 0 0 4px #fff, 0 4px 14px rgba(224, 127, 153, 0.22);
   overflow: hidden;
   animation: pop 0.5s ease;
 }
@@ -86,18 +103,11 @@ main {
   60% { transform: scale(1.08); }
   100% { transform: scale(1); opacity: 1; }
 }
-.stage-img-emoji {
-  font-size: 70px;
-  line-height: 1;
-}
-.stage-img-file {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
+.stage-img-emoji { font-size: 76px; line-height: 1; }
+.stage-img-file { width: 100%; height: 100%; object-fit: cover; }
 .stage-title {
   margin: 0 0 6px;
-  font-size: 20px;
+  font-size: 21px;
   color: var(--primary-dark);
 }
 .stage-message {
@@ -107,54 +117,46 @@ main {
 }
 
 /* ===== 進捗カード ===== */
-.amount-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
+.amount-row { text-align: center; }
 .amount-current {
-  font-size: 28px;
-  font-weight: 700;
+  font-size: 34px;
+  font-weight: 800;
   color: var(--primary-dark);
 }
-.amount-sep { color: var(--text-sub); }
-.amount-goal {
-  font-size: 18px;
+.amount-goal-row {
+  text-align: center;
+  font-size: 14px;
   color: var(--text-sub);
+  margin-top: 2px;
 }
+.amount-goal-row span { font-weight: 600; color: var(--text); }
 .progress-track {
-  margin: 14px 0 8px;
-  height: 16px;
-  background: #f6e7ee;
+  margin: 16px 0 10px;
+  height: 18px;
+  background: #f5e3eb;
   border-radius: 999px;
   overflow: hidden;
+  box-shadow: inset 0 1px 3px rgba(224, 127, 153, 0.18);
 }
 .progress-fill {
   height: 100%;
   width: 0%;
+  min-width: 0;
   border-radius: 999px;
-  background: linear-gradient(90deg, var(--primary) 0%, #f7b8cb 100%);
+  background: linear-gradient(90deg, #f7b8cb 0%, var(--primary) 50%, var(--primary-dark) 100%);
   transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .progress-meta {
   margin: 0;
   display: flex;
   justify-content: space-between;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-sub);
 }
-#progress-percent {
-  font-weight: 700;
-  color: var(--primary-dark);
-}
+#progress-percent { font-weight: 800; color: var(--primary-dark); font-size: 16px; }
 
-/* ===== 入力カード ===== */
-.field {
-  display: block;
-  margin-bottom: 14px;
-}
+/* ===== フォーム ===== */
+.field { display: block; margin-bottom: 16px; }
 .field-label {
   display: block;
   font-size: 13px;
@@ -170,9 +172,7 @@ main {
   padding: 0 14px;
   transition: border-color 0.2s;
 }
-.field-input:focus-within {
-  border-color: var(--primary);
-}
+.field-input:focus-within { border-color: var(--primary); }
 .field-input .yen {
   color: var(--primary-dark);
   font-weight: 700;
@@ -182,30 +182,53 @@ main {
   flex: 1;
   border: none;
   background: transparent;
-  padding: 12px 4px;
+  padding: 14px 4px;
   outline: none;
   color: var(--text);
   width: 100%;
 }
-.save-btn {
+
+/* よく使う金額ボタン */
+.quick-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.quick-btn {
+  padding: 13px 4px;
+  border: 2px solid var(--accent);
+  border-radius: 14px;
+  background: #fff6fa;
+  color: var(--primary-dark);
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.1s, background 0.15s;
+}
+.quick-btn:active { transform: scale(0.96); background: var(--accent); }
+
+/* 主要ボタン */
+.primary-btn {
   width: 100%;
+  min-height: 52px;
   margin-top: 4px;
   padding: 14px;
   border: none;
-  border-radius: 14px;
+  border-radius: 16px;
   background: linear-gradient(90deg, var(--primary) 0%, var(--primary-dark) 100%);
   color: #fff;
   font-size: 16px;
   font-weight: 700;
   letter-spacing: 0.05em;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(232, 138, 161, 0.35);
-  transition: transform 0.1s, opacity 0.2s;
+  box-shadow: 0 4px 12px rgba(224, 127, 153, 0.35);
+  transition: transform 0.1s;
 }
-.save-btn:active { transform: scale(0.97); }
+.primary-btn:active { transform: scale(0.97); }
+
 .saved-note {
   text-align: center;
-  margin: 10px 0 0;
+  margin: 12px 0 0;
   height: 18px;
   font-size: 13px;
   color: var(--good);
@@ -213,74 +236,129 @@ main {
   transition: opacity 0.2s;
 }
 .saved-note.show { opacity: 1; }
+.saved-note.error { color: var(--danger); }
 
-/* ===== ステージ一覧 ===== */
-.stages-list-title {
-  margin: 0 0 12px;
-  font-size: 15px;
+/* ===== 履歴 ===== */
+.history-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.history-head .card-title { margin: 0; }
+.history-total {
+  font-size: 14px;
+  font-weight: 700;
   color: var(--primary-dark);
 }
-.stages-list {
+.history-list {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
-.stage-row {
+.history-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 8px 10px;
-  border-radius: 14px;
+  gap: 10px;
+  padding: 12px 14px;
   background: #fdf6f9;
-  border: 1px solid transparent;
-  opacity: 0.55;
-  transition: all 0.2s;
+  border: 1px solid var(--border);
+  border-radius: 14px;
 }
-.stage-row.cleared { opacity: 1; }
-.stage-row.active {
-  background: #fff0f5;
-  border-color: var(--primary);
-  box-shadow: 0 2px 8px rgba(232, 138, 161, 0.2);
-  opacity: 1;
-}
-.stage-row-icon {
-  width: 40px;
-  height: 40px;
-  flex: 0 0 40px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 50% 40%, #fff 0%, var(--accent) 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-.stage-row-icon .stage-img-emoji { font-size: 22px; }
-.stage-row-icon .stage-img-file {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.stage-row-body {
+.history-main {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  line-height: 1.3;
+  min-width: 0;
 }
-.stage-row-name {
-  font-size: 14px;
-  font-weight: 600;
+.history-amount {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--good);
 }
-.stage-row-amount {
+.history-meta {
   font-size: 12px;
+  color: var(--text-sub);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.history-delete {
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: 50%;
+  background: #fbe6ec;
+  color: var(--danger);
+  font-size: 15px;
+  cursor: pointer;
+  transition: transform 0.1s, background 0.15s;
+}
+.history-delete:active { transform: scale(0.9); background: #f6cdd7; }
+.empty-note {
+  margin: 8px 0 0;
+  text-align: center;
+  font-size: 13px;
   color: var(--text-sub);
 }
 
-/* フッター */
-.app-footer {
-  text-align: center;
-  padding: 8px 0 24px;
-  font-size: 12px;
+/* ===== 危険ゾーン ===== */
+.danger-card { border-color: #f3d2d2; }
+.danger-text {
+  margin: 0 0 14px;
+  font-size: 13px;
   color: var(--text-sub);
 }
+.danger-btn {
+  width: 100%;
+  min-height: 52px;
+  padding: 14px;
+  border: 2px solid var(--danger);
+  border-radius: 16px;
+  background: #fff;
+  color: var(--danger);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.1s, background 0.15s;
+}
+.danger-btn:active { transform: scale(0.97); background: #fdeaea; }
+
+/* ===== タブバー ===== */
+.tab-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  display: flex;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -4px 16px rgba(224, 127, 153, 0.1);
+  z-index: 100;
+}
+.tab-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border: none;
+  background: none;
+  color: var(--text-sub);
+  cursor: pointer;
+  padding: 6px 0;
+  transition: color 0.15s;
+}
+.tab-item.active { color: var(--primary-dark); }
+.tab-icon { font-size: 22px; line-height: 1; }
+.tab-item.active .tab-icon { transform: scale(1.12); }
+.tab-label { font-size: 11px; font-weight: 600; }
